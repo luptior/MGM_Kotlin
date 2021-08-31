@@ -23,8 +23,7 @@ class mgmAgent(
     var currentUtility: Float
         private set
     private var gain = 0f
-    private var status // should be 3 status starting/gain/value_update
-            = "value"
+    private var status = "value" // should be 3 status starting/gain/value_update
     var cycleCount = 0
     var recv: List<String>? = null
 
