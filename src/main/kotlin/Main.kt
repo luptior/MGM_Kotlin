@@ -1,7 +1,4 @@
 fun main() {
-    println("Hello World!")
-
-
     val p = DCOPProblem()
 
     val agentsPorts = HashMap<String, Int>()
@@ -9,13 +6,8 @@ fun main() {
         agentsPorts[a] = 5000 + p.agents.indexOf(a)
     }
 
-
-    // build agents
-
-
     // build agents
     val agentDict = HashMap<String, mgmAgent>()
-
 
     for (a in p.agents) {
         val neighbors = ArrayList<String>()
@@ -25,7 +17,7 @@ fun main() {
                 neighbors.add(p.agents[i])
             }
         }
-        val new_agent = mgmAgent(
+        val newAgent = mgmAgent(
             a,
             p.agents.indexOf(a),
             p.domains[a]!!,
@@ -35,9 +27,8 @@ fun main() {
             5000 + p.agents.indexOf(a),
             agentsPorts
         )
-        agentDict[a] = new_agent
+        agentDict[a] = newAgent
     }
-
 
     // start agents
     for (a in p.agents) {
