@@ -4,7 +4,6 @@ fun dictDecopose(dict: String): HashMap<String, String> {
     var key: String
     var value: String
     for (m in msg_parts) {
-//            string.replaceAll("^\"|\"$", "");
         key = m.split(":").toTypedArray().get(0)
             .replace(" ", "")
             .replace("{", "")
