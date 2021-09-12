@@ -25,7 +25,7 @@ class DCOPProblem {
         // TODO: do the actual work here
         // might need some library which can do the combinatorial in Java
 
-        var solutions: ArrayList<List<String>>? = null
+        var solutions: MutableList<List<String>>? = null
 
         return solutions
     }
@@ -35,12 +35,11 @@ class DCOPProblem {
      */
     override fun toString(): String {
         var problemString = ""
-        problemString += agents.toString() + "\n"
-        problemString += domains.toString() + "\n"
+        problemString += "$agents \n$domains \n"
         for (edge in edges) {
-            problemString += edge.toString() + "\n"
+            problemString += "$edge \n"
         }
-        problemString += utility.toString()
+        problemString += "$utility"
         return problemString
     }
 
@@ -52,11 +51,11 @@ class DCOPProblem {
 
     init {
         // default to have a sample question
-        val domain = ArrayList<String>()
+        val domain = mutableListOf<String>()
         domain.add("R")
         domain.add("G")
         for (a in agents) {
-            domains.put(a, domain)
+            domains[a] = domain
         }
         edges = Array(agents.size) { IntArray(agents.size) }
         for (i in agents.indices) {
