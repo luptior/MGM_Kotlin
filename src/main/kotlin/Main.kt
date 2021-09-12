@@ -10,7 +10,7 @@ fun main() {
     val agentDict = HashMap<String, mgmAgent>()
 
     for (a in p.agents) {
-        val neighbors = ArrayList<String>()
+        val neighbors = mutableListOf<String>()
         val index = p.agents.indexOf(a)
         for (i in 0 until p.edges.size) {
             if (p.edges[index][i] == 1) {
