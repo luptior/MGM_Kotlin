@@ -1,7 +1,11 @@
 import java.io.IOException
+import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.TimeUnit
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import kotlinx.serialization.json.*
 
 /**
  * current default to be seeking maximum
@@ -28,7 +32,7 @@ class mgmAgent(
     var recv: List<String>? = null
 
     // neighbor related fields
-    private val neighbors: ArrayList<String>
+    private val neighbors: List<String>
     private val neighborsPorts: HashMap<String, Int>
     private var neighborsValues: HashMap<String, String>
     private val neighborsNewValues: HashMap<String, String>
@@ -36,14 +40,14 @@ class mgmAgent(
     private val agentUtilityMap: HashMap<String, HashMap<String, HashMap<String, Int>>>? = null
 
     // communication related fields
-    private val ip: java.net.InetAddress? = null
+    private val ip: InetAddress? = null
     private val PORT: Int
-    override fun run() {
+    public override fun run() {
         // the main run process for each agent
         val ch = ClientHandler()
 
         // where agent spawn the thread to handle each income request
-        val ch_thread: java.lang.Thread = java.lang.Thread(ch)
+        val ch_thread: Thread = Thread(ch)
         ch_thread.start()
 
         // wait a second for the thread to start before messages are sent
@@ -59,11 +63,11 @@ class mgmAgent(
         }
     }
 
-    internal inner class MessageHandler(s: Socket, dis: java.io.DataInputStream, dos: java.io.DataOutputStream) :
+    internal inner class MessageHandler(s: Socket, dis: DataInputStream, dos: DataOutputStream) :
         Runnable {
         // Very simple calss for taking in the value and store it in the received
-        private val dis: java.io.DataInputStream
-        private val dos: java.io.DataOutputStream
+        private val dis: DataInputStream
+        private val dos: DataOutputStream
         private val socket: Socket
 
         @kotlin.jvm.Volatile
@@ -104,7 +108,7 @@ class mgmAgent(
         override fun run() {
             val ss: ServerSocket
 //            var received: String
-            recv = java.util.ArrayList<String>()
+            recv = mutableListOf()
             println("Agent $name starts running")
             try {
                 // server is listening on port 5056
@@ -127,7 +131,7 @@ class mgmAgent(
 
                         // create a new thread object
                         val ch: MessageHandler = MessageHandler(socket, dis, dos)
-                        val t: java.lang.Thread = java.lang.Thread(ch)
+                        val t: Thread = Thread(ch)
 
                         // Invoking the start() method
                         t.start()
@@ -176,14 +180,15 @@ class mgmAgent(
         return domain
     }
 
-    fun getNeighbors(): java.util.ArrayList<String> {
+    fun getNeighbors(): List<String> {
         return neighbors
     }
 
     private fun sendValueMessage() {
         // send the current value to all its neighbors
         for (n: String in neighbors) {
-            val toSend = "$name/$n/value/$currentValue"
+//            val toSend = "$name/$n/value/$currentValue"
+            val toSend = MgmMessage(name, n, MessageType.VALUE, MessageContent(value = currentValue))
             neighborsPorts[n]?.let { sendMsg(it, toSend) }
         }
         // System.out.println("In cycle:"+ cycle_count + ", "+ name + " value " + currentValue+ " sent to "+ neighbors);
@@ -196,7 +201,8 @@ class mgmAgent(
     private fun sendGainMessage() {
         // send the current gain to all agents in neighbor list
         for (n: String in neighbors) {
-            val toSend = "$name/$n/gain/$gain"
+//            val toSend = "$name/$n/gain/$gain"
+            val toSend = MgmMessage(name, n, MessageType.GAIN, MessageContent(gain = gain))
             neighborsPorts.get(n)?.let { sendMsg(it, toSend) }
         }
         //println("In cycle:"+ cycle_count + ", "+ name + " gain:" +this.gain+" sent to "+ neighbors);
@@ -258,8 +264,8 @@ class mgmAgent(
                 println("Optimization Mode is not supporteds")
             }
             println(
-                "In cycle: " + cycleCount + " agent: " + name + " neighbors: " + neighborsValues
-                        + " current ultility: " + (currentUtility - gain) + " gain: " + gain
+                "In cycle: $cycleCount agent: $name neighbors: $neighborsValues " + "current ultility: " +
+                        "${currentUtility - gain} gain: $gain"
             )
             neighborsGains = HashMap<String, Float>()
             // change status
@@ -300,20 +306,20 @@ class mgmAgent(
         println("Agent $name current ultility: $currentUtility gain: $gain neighbors $neighborsValues")
     }
 
-    fun sendMsg(port: Int, msg: String?) {
+    private fun sendMsg(port: Int, msg: MgmMessage) {
         try {
             // getting localhost ip
-            val ip: java.net.InetAddress = java.net.InetAddress.getByName("localhost")
+            val ip: InetAddress = InetAddress.getByName("localhost")
 
             // establish the connection with server port 5056
             val s = Socket(ip, port)
 
             // obtaining input and out streams
-            val dis: java.io.DataInputStream = java.io.DataInputStream(s.getInputStream())
-            val dos: java.io.DataOutputStream = java.io.DataOutputStream(s.getOutputStream())
+            val dis = DataInputStream(s.getInputStream())
+            val dos = DataOutputStream(s.getOutputStream())
 
             //send 1, the msg gonna be read
-            dos.writeUTF(msg)
+            dos.writeUTF(Json.encodeToString(msg) )
 
             //System.out.println("Msg \"" + msg +"\" sent from " + PORT + " to " + port);
             s.close()
@@ -332,13 +338,15 @@ class mgmAgent(
 
             // currently hardcoded
             var value = 0
-            if ((((agent1 == "a1") && (agent2 == "a2") || (agent1 == "a2") && (agent2 == "a1"))
-                        && (val1 == val2))
+            if ((( agent1 == "a1" && agent2 == "a2" ||
+                        agent1 == "a2" && agent2 == "a1")
+                            && val1 == val2 )
             ) {
                 value += 10
             }
-            if ((((agent1 == "a3") && (agent2 == "a2") || (agent1 == "a2") && (agent2 == "a3"))
-                        && (val1 == val2))
+            if ((( agent1 == "a3" && agent2 == "a2" ||
+                        agent1 == "a2" && agent2 == "a3")
+                            && val1 == val2)
             ) {
                 value += 10
             }
@@ -346,27 +354,13 @@ class mgmAgent(
         }
 
         private fun evaluateExtensional(name: String, val1: String?): Float {
-            var `val` = 0f
-            if ((name == "a1")) {
-                if ((val1 == "R")) {
-                    `val` -= 0.1f
-                } else {
-                    `val` += 0.1f
-                }
-            } else if ((name == "a2")) {
-                if ((val1 == "R")) {
-                    `val` += 0.1f
-                } else {
-                    `val` -= 0.1f
-                }
-            } else if ((name == "a3")) {
-                if ((val1 == "R")) {
-                    `val` += 0.1f
-                } else {
-                    `val` -= 0.1f
-                }
+            var value = 0f
+
+            when (name){
+                "a1" -> value += if (val1 == "R") -0.1f else 0.1f
+                "a2", "a3" -> value += if (val1 == "R") 0.1f else -0.1f
             }
-            return `val`
+            return value
         }
 
         private fun parseMsg(msg: String?): HashMap<String, String> {
@@ -389,7 +383,7 @@ class mgmAgent(
         var dcopDomain = domain
         currentValue = dcopDomain[0]
         currentUtility = 0f
-        this.neighbors = neighbors as ArrayList<String>
+        this.neighbors = neighbors as List<String>
         neighborsValues = HashMap()
         neighborsNewValues = HashMap()
         neighborsGains = HashMap()
