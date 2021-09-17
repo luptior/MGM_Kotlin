@@ -353,7 +353,7 @@ class mgmAgent(
             return value.toFloat()
         }
 
-        private fun evaluateExtensional(name: String, val1: String?): Float {
+        private fun evaluateExtensional(name: String, val1: String): Float {
             var value = 0f
 
             when (name){
