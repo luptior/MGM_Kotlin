@@ -16,6 +16,7 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.3.0")
+    implementation("com.squareup.okhttp3:okhttp:4.9.1")
 }
 
 tasks.test {
@@ -23,7 +24,7 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile>() {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "11"
 }
 
 application {
