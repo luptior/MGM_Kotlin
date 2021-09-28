@@ -36,7 +36,7 @@ class MgmAgent(
     var currentUtility: Float
         private set
     private var gain = 0f
-    private var status = AgentStatus.VALUE // should be 3 status starting/gain/value_update
+    private var status = AgentStatus.VALUE
     var cycleCount = 0
     var recv: List<String>? = null
 
@@ -46,7 +46,9 @@ class MgmAgent(
     private var neighborsValues: HashMap<String, String>
     private val neighborsNewValues: HashMap<String, String>
     private var neighborsGains: HashMap<String, Float>
-    private val agentUtilityMap: HashMap<String, HashMap<String, HashMap<String, Int>>>? = null
+
+    //TODO: read and store the utility map from dcop problem
+    // private val agentUtilityMap: HashMap<String, HashMap<String, HashMap<String, Int>>>? = null
 
     // communication related fields
     private val ip: InetAddress? = null
@@ -56,8 +58,8 @@ class MgmAgent(
         val ch = ClientHandler()
 
         // where agent spawn the thread to handle each income request
-        val ch_thread = Thread(ch)
-        ch_thread.start()
+        val chThread = Thread(ch)
+        chThread.start()
 
         // wait a second for the thread to start before messages are sent
         try {
@@ -188,23 +190,12 @@ class MgmAgent(
         }
     }
 
-    fun getDcopDomain(): List<String> {
-        return domain
-    }
-
-    fun getNeighbors(): List<String> {
-        return neighbors
-    }
-
     private fun sendValueMessage() {
         // send the current value to all its neighbors
         for (n: String in neighbors) {
-//            val toSend = "$name/$n/value/$currentValue"
             val toSend = MgmMessage(name, n, MessageType.VALUE, MessageContent(value = currentValue))
             neighborsPorts[n]?.let { sendMsg(it, toSend) }
         }
-        // System.out.println("In cycle:"+ cycle_count + ", "+ name + " value " + currentValue+ " sent to "+ neighbors);
-
 
         // TODO:
         // pubsub: can publish the message to the channel of this agent
@@ -299,7 +290,7 @@ class MgmAgent(
          * returns the best assignment and store in this.gain
          */
         var bestSoFar = currentUtility
-        for (value: String in getDcopDomain()) {
+        for (value: String in domain) {
             var newUtility = evaluateExtensional(name, value)
             newUtility += evaluateRelations(value)
             println("agent: $name value:$value u:$newUtility")
