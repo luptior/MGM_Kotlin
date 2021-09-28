@@ -8,11 +8,12 @@ enum class MessageType {
 }
 
 @Serializable
-data class MessageContent(val value: String? = null, val gain : Float? = null)
+data class MessageContent(val value: String? = null, val gain: Float? = null)
 
 @Serializable
-data class MgmMessage( val agentName: String,
-                        val destination: String,
-                        val messageType: MessageType,
-                        val messageContent: MessageContent,
+data class MgmMessage(
+    val agentName: String,
+    val destination: String,
+    val messageType: MessageType,
+    val messageContent: MessageContent,
 )
