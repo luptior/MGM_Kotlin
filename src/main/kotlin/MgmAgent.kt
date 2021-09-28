@@ -6,14 +6,10 @@ import java.util.concurrent.TimeUnit
 import java.io.DataInputStream
 import java.io.DataOutputStream
 
-import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.decodeFromByteArray
-
-/**
- * current default to be seeking maximum
- */
+import kotlinx.serialization.protobuf.ProtoBuf
 
 enum class AgentStatus {
     GAIN,
@@ -29,7 +25,7 @@ class MgmAgent(
     private val name: String,
     val iD: Int,
     private val domain: List<String>,
-    private val optMode: OptimizationMode = OptimizationMode.MAX,
+    private val optMode: OptimizationMode = OptimizationMode.MAX, // current default to be seeking maximum
     val cycle_limit: Int = 10,
     neighbors: List<String>,
     port: Int,
@@ -168,7 +164,6 @@ class MgmAgent(
                             }
                         }
 
-
                     } catch (e: java.lang.Exception) {
                         try {
                             socket?.close()
@@ -206,7 +201,6 @@ class MgmAgent(
             val toSend = MgmMessage(name, n, MessageType.GAIN, MessageContent(gain = gain))
             neighborsPorts[n]?.let { sendMsg(it, toSend) }
         }
-
         // TODO: can publish the message to the channel of this agent
     }
 
@@ -255,10 +249,8 @@ class MgmAgent(
             } else {
                 println("Optimization Mode is not supported")
             }
-            println(
-                "In cycle: $cycleCount agent: $name neighbors: $neighborsValues " + "current utility: " +
-                        "${currentUtility - gain} gain: $gain"
-            )
+            println("In cycle: $cycleCount agent: $name neighbors: $neighborsValues " + "current utility: " +
+                    "${currentUtility - gain} gain: $gain" )
             neighborsGains = HashMap()
             // change status
             status = AgentStatus.VALUE
@@ -275,11 +267,11 @@ class MgmAgent(
         return tempValue
     }
 
+    /**
+     * find the best value in dcop domain based on current context
+     * returns the best assignment and store in this gain
+     */
     private fun findOptValue() {
-        /**
-         * find the best value in dcop domain based on current context
-         * returns the best assignment and store in this.gain
-         */
         var bestSoFar = currentUtility
         for (value: String in domain) {
             var newUtility = evaluateExtensional(name, value)
@@ -299,10 +291,10 @@ class MgmAgent(
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    private fun sendMsg(port: Int, msg: MgmMessage) {
+    private fun sendMsg(port: Int, msg: MgmMessage, address: String = "localhost") {
         try {
             // getting localhost ip
-            val ip: InetAddress = InetAddress.getByName("localhost")
+            val ip: InetAddress = InetAddress.getByName(address)
 
             // establish the connection with server port 5056
             val s = Socket(ip, port)
