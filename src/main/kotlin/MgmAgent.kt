@@ -119,7 +119,6 @@ class MgmAgent(
         @OptIn(ExperimentalSerializationApi::class)
         override fun run() {
             val ss: ServerSocket
-//            var received: String
             recv = mutableListOf()
             println("Agent $name starts running")
             try {
@@ -167,7 +166,7 @@ class MgmAgent(
                                 MessageType.GAIN -> {
                                     neighborsGains[decodedMsg.agentName] = decodedMsg.messageContent.gain!!
                                     if (status == AgentStatus.GAIN) {
-                                        handleGainMesssage()
+                                        handleGainMessage()
                                     }
                                 }
                             }
@@ -190,8 +189,10 @@ class MgmAgent(
         }
     }
 
+    /**
+     * send the current value to all its neighbors
+     */
     private fun sendValueMessage() {
-        // send the current value to all its neighbors
         for (n: String in neighbors) {
             val toSend = MgmMessage(name, n, MessageType.VALUE, MessageContent(value = currentValue))
             neighborsPorts[n]?.let { sendMsg(it, toSend) }
@@ -201,43 +202,38 @@ class MgmAgent(
         // pubsub: can publish the message to the channel of this agent
     }
 
+    /**
+     * send the current gain to all agents in neighbor list
+     */
     private fun sendGainMessage() {
-        // send the current gain to all agents in neighbor list
         for (n: String in neighbors) {
-//            val toSend = "$name/$n/gain/$gain"
             val toSend = MgmMessage(name, n, MessageType.GAIN, MessageContent(gain = gain))
             neighborsPorts.get(n)?.let { sendMsg(it, toSend) }
         }
-        //println("In cycle:"+ cycle_count + ", "+ name + " gain:" +this.gain+" sent to "+ neighbors);
 
-        // pubsub: can publish the message to the channel of this agent
+        // TODO: can publish the message to the channel of this agent
     }
 
-    //    public void getGainMessage(){
-    //        for (int i = 0; i < neighbors.size(); i++) {
-    //            mgmMessage msg = fetchFromChannel(neighbors.get(i));
-    //            neighborsGains.replace(neighbors.get(i), msg.getGain());
-    //        }
-    //    }
+    /**
+     * when all values updates have been received
+     * given the new context received in this.neighborsNewValues
+     * gain and newValue has been set by findOptAssignment()
+     */
     fun handleValueMessage() {
-        // when all values updates have been received
-        // given the new context received in this.neighborsNewValues
-        // gain and newValue has been set by findOptAssignment()
         if (neighborsNewValues.size == neighbors.size) {
             status = AgentStatus.GAIN
-//            neighborsValues = neighborsNewValues.clone() as HashMap<String, String>
             neighborsValues = neighborsNewValues
-            //println("Status change: Agent " + name + " starts handling gain");
             findOptValue()
             sendGainMessage()
         }
     }
 
-    fun handleGainMesssage() {
-        // when all gain updates have been received
-        // given the new context received in this.neighborsNewValues
-        // gain and newValue has been set by findOptAssignment()
-
+    /**
+     * when all gain updates have been received
+     * given the new context received in this.neighborsNewValues
+     * gain and newValue has been set by findOptAssignment()
+     */
+    fun handleGainMessage() {
         if (neighborsGains.size == neighbors.size) {
             val allGains: HashMap<String, Float> = neighborsGains
             allGains[name] = gain
@@ -246,8 +242,7 @@ class MgmAgent(
                     allGains.entries,
                     java.util.Map.Entry.comparingByValue<String, Float>()
                 ).key
-                if (maxNeighbour == name) {
-                    // if the max gain is current agent
+                if (maxNeighbour == name) { // if the max gain is current agent
                     currentValue = newValue
                     currentUtility += gain
                     // sendValueMessage();
@@ -255,20 +250,20 @@ class MgmAgent(
             } else if (optMode == "min") {
                 val minNeighbour: String = java.util.Collections.min<Map.Entry<String, Float>>(
                     allGains.entries,
-                    java.util.Map.Entry.comparingByValue<String, Float>()
+                    java.util.Map.Entry.comparingByValue()
                 ).key
                 if (minNeighbour == name) {
                     currentValue = newValue
                     currentUtility += gain
                 }
             } else {
-                println("Optimization Mode is not supporteds")
+                println("Optimization Mode is not supported")
             }
             println(
-                "In cycle: $cycleCount agent: $name neighbors: $neighborsValues " + "current ultility: " +
+                "In cycle: $cycleCount agent: $name neighbors: $neighborsValues " + "current utility: " +
                         "${currentUtility - gain} gain: $gain"
             )
-            neighborsGains = HashMap<String, Float>()
+            neighborsGains = HashMap()
             // change status
             status = AgentStatus.VALUE
             cycleCount += 1
