@@ -1,5 +1,4 @@
 import kotlinx.serialization.*
-import kotlinx.serialization.json.*
 
 @Serializable
 enum class MessageType {
