@@ -5,9 +5,8 @@ import kotlinx.serialization.decodeFromByteArray
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class mgmMessageTest {
-
-    @OptIn(ExperimentalSerializationApi::class)
+@OptIn(ExperimentalSerializationApi::class)
+class MgmMessageTest {
     @Test
     fun mgmMessageTest_Serialization(){
         val msg = MgmMessage(
