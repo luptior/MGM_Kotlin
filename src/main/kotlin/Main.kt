@@ -7,7 +7,7 @@ fun main() {
     }
 
     // build agents
-    val agentDict = HashMap<String, mgmAgent>()
+    val agentDict = HashMap<String, MgmAgent>()
 
     for (a in p.agents) {
         val neighbors = mutableListOf<String>()
@@ -17,7 +17,7 @@ fun main() {
                 neighbors.add(p.agents[i])
             }
         }
-        val newAgent = mgmAgent(
+        val newAgent = MgmAgent(
             a,
             p.agents.indexOf(a),
             p.domains[a]!!,

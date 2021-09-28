@@ -15,7 +15,12 @@ import kotlinx.serialization.decodeFromByteArray
  * current default to be seeking maximum
  */
 
-class mgmAgent(
+enum class AgentStatus {
+    GAIN,
+    VALUE
+}
+
+class MgmAgent(
     private val name: String,
     val iD: Int,
     private val domain: List<String>,
@@ -31,7 +36,7 @@ class mgmAgent(
     var currentUtility: Float
         private set
     private var gain = 0f
-    private var status = "value" // should be 3 status starting/gain/value_update
+    private var status = AgentStatus.VALUE // should be 3 status starting/gain/value_update
     var cycleCount = 0
     var recv: List<String>? = null
 
@@ -153,13 +158,13 @@ class mgmAgent(
                                         currentValue?.let { bestSoFar += evaluateRelations(it) }
                                         currentUtility = bestSoFar
                                     }
-                                    if (status == "value") {
+                                    if (status == AgentStatus.VALUE) {
                                         handleValueMessage()
                                     }
                                 }
                                 MessageType.GAIN -> {
                                     neighborsGains[decodedMsg.agentName] = decodedMsg.messageContent.gain!!
-                                    if (status == "gain") {
+                                    if (status == AgentStatus.GAIN) {
                                         handleGainMesssage()
                                     }
                                 }
@@ -228,7 +233,7 @@ class mgmAgent(
         // given the new context received in this.neighborsNewValues
         // gain and newValue has been set by findOptAssignment()
         if (neighborsNewValues.size == neighbors.size) {
-            status = "gain"
+            status = AgentStatus.GAIN
 //            neighborsValues = neighborsNewValues.clone() as HashMap<String, String>
             neighborsValues = neighborsNewValues
             //println("Status change: Agent " + name + " starts handling gain");
@@ -274,15 +279,14 @@ class mgmAgent(
             )
             neighborsGains = HashMap<String, Float>()
             // change status
-            status = "value"
-            //System.out.println("Status change: Agent " + name + " starts handling value");
+            status = AgentStatus.VALUE
             cycleCount += 1
             sendValueMessage()
         }
     }
 
     private fun evaluateRelations(value: String): Float {
-        var tempValue: Float = 0f
+        var tempValue = 0f
         for (n: String in neighbors) {
             (neighborsValues[n]?.let { tempValue += evaluateValue(name, value, n, it) })
         }
@@ -290,14 +294,15 @@ class mgmAgent(
     }
 
     private fun findOptValue() {
-        // find the best value in dcop domain based on current context
-        // returns the best assignment and store in this.gain
+        /**
+         * find the best value in dcop domain based on current context
+         * returns the best assignment and store in this.gain
+         */
         var bestSoFar = currentUtility
         for (value: String in getDcopDomain()) {
             var newUtility = evaluateExtensional(name, value)
             newUtility += evaluateRelations(value)
             println("agent: $name value:$value u:$newUtility")
-            //System.out.println("New Utility is" + newUtility + "current" + this.currentUtility);
             if (newUtility > bestSoFar && (optMode == "max") ||
                 newUtility < bestSoFar && (optMode == "min")
             ) {
@@ -308,7 +313,7 @@ class mgmAgent(
             }
         }
         gain = bestSoFar - currentUtility
-        println("Agent $name current ultility: $currentUtility gain: $gain neighbors $neighborsValues")
+        println("Agent $name current utility: $currentUtility gain: $gain neighbors $neighborsValues")
     }
 
     @OptIn(ExperimentalSerializationApi::class)
@@ -325,10 +330,8 @@ class mgmAgent(
             val dos = DataOutputStream(s.getOutputStream())
 
             //send 1, the msg gonna be read
-//            dos.writeUTF(Json.encodeToString(msg) )
             val bytes = ProtoBuf.encodeToByteArray(msg)
             dos.write(bytes)
-            //System.out.println("Msg \"" + msg +"\" sent from " + PORT + " to " + port);
             s.close()
             dis.close()
             dos.close()
@@ -339,56 +342,39 @@ class mgmAgent(
 
     companion object {
         private fun evaluateValue(agent1: String, val1: String, agent2: String, val2: String): Float {
-            // compare the utility given that this agent chooses val1 and agent2 choose val2
-
-            // return agentUtilityMap.get(val1).get(agent2).get(val2);
-
-            // currently hardcoded
-            var value = 0
+            /**
+             * compare the utility given that this agent chooses val1 and agent2 choose val2, currently hardcoded
+             * TODO: return agentUtilityMap[val1][agent2][val2]
+             */
+            var value = 0f
             if ((( agent1 == "a1" && agent2 == "a2" ||
                         agent1 == "a2" && agent2 == "a1")
                             && val1 == val2 )
             ) {
-                value += 10
+                value += 10f
             }
             if ((( agent1 == "a3" && agent2 == "a2" ||
                         agent1 == "a2" && agent2 == "a3")
                             && val1 == val2)
             ) {
-                value += 10
+                value += 10f
             }
-            return value.toFloat()
+            return value
         }
 
         private fun evaluateExtensional(name: String, val1: String): Float {
             var value = 0f
-
             when (name){
                 "a1" -> value += if (val1 == "R") -0.1f else 0.1f
                 "a2", "a3" -> value += if (val1 == "R") 0.1f else -0.1f
             }
             return value
         }
-
-        private fun parseMsg(msg: String?): HashMap<String, String> {
-            // Msg : "orginAgentID-type-value"
-            val reformattedMsg: HashMap<String, String> = HashMap<String, String>()
-            val msgParts: Array<String> = msg!!.split("/").toTypedArray()
-            reformattedMsg["origin"] = msgParts[0]
-            reformattedMsg["dest"] = msgParts[1]
-            reformattedMsg["type"] = msgParts[2]
-            reformattedMsg["value"] = msgParts[3]
-            return reformattedMsg
-        }
     }
 
     init {
-        // gain/value
-        // can be max or min
-
-        //Assign the first element of the dcop domain to be the current assignment
         val dcopDomain = domain
-        currentValue = dcopDomain[0]
+        currentValue = dcopDomain[0] //Assign the first element of the dcop domain to be the current assignment
         currentUtility = 0f
         this.neighbors = neighbors
         neighborsValues = HashMap()
