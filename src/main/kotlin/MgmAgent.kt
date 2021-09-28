@@ -20,11 +20,16 @@ enum class AgentStatus {
     VALUE
 }
 
+enum class OptimizationMode {
+    MAX,
+    MIN
+}
+
 class MgmAgent(
     private val name: String,
     val iD: Int,
     private val domain: List<String>,
-    private val optMode: String = "max",
+    private val optMode: OptimizationMode = OptimizationMode.MAX,
     val cycle_limit: Int = 10,
     neighbors: List<String>,
     port: Int,
@@ -32,9 +37,9 @@ class MgmAgent(
 ) : Runnable {
     var currentValue: String?
         private set
-    private var newValue: String? = null
     var currentUtility: Float
         private set
+    private var newValue: String? = null
     private var gain = 0f
     private var status = AgentStatus.VALUE
     var cycleCount = 0
@@ -74,48 +79,41 @@ class MgmAgent(
         }
     }
 
-    internal inner class MessageHandler(s: Socket, dis: DataInputStream, dos: DataOutputStream) :
-        Runnable {
-        // Very simple calss for taking in the value and store it in the received
-        private val dis: DataInputStream
+    internal inner class MessageHandler(
+        private val socket: Socket,
+        private val dis: DataInputStream,
         private val dos: DataOutputStream
-        private val socket: Socket
+    ) : Runnable {
+        // Very simple class for taking in the value and store it in the received
 
         @kotlin.jvm.Volatile
         var recvd: ByteArray? = null
             private set
 
         override fun run() {
+
             while (true) {
                 try {
-                    // receive 1
                     recvd = dis.readBytes()
-                    // System.out.println("    Msg received by " + name +"  "+ recvd);
                     socket.close()
                     break
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
             }
+
             try {
-                // closing resources
                 dis.close()
                 dos.close()
             } catch (e: IOException) {
                 e.printStackTrace()
             }
         }
-
-        // Constructor
-        init {
-            this.socket = s
-            this.dis = dis
-            this.dos = dos
-        }
     }
 
     // ClientHandler class
     internal inner class ClientHandler() : Runnable {
+
         @OptIn(ExperimentalSerializationApi::class)
         override fun run() {
             val ss: ServerSocket
@@ -126,14 +124,12 @@ class MgmAgent(
                 ss = ServerSocket(PORT)
                 println("Agent $name gets port $PORT")
 
-                // running infinite loop for getting
-                // client request
+                // running infinite loop for getting client request
                 while (cycleCount < cycle_limit) {
                     var socket: Socket? = null
                     try {
                         // socket object to receive incoming client requests\
                         socket = ss.accept()
-
 
                         // obtaining input and out streams
                         val dis = DataInputStream(socket.getInputStream())
@@ -147,7 +143,7 @@ class MgmAgent(
                         t.start()
                         t.join()
 
-                        ch.recvd?.let{ bytesMsg ->
+                        ch.recvd?.let { bytesMsg ->
                             val decodedMsg = ProtoBuf.decodeFromByteArray<MgmMessage>(bytesMsg)
 
                             when (decodedMsg.messageType) {
@@ -177,8 +173,8 @@ class MgmAgent(
                         try {
                             socket?.close()
                             e.printStackTrace()
-                        } catch (se: NullPointerException) {
-                            se.printStackTrace()
+                        } catch (socketException: NullPointerException) {
+                            socketException.printStackTrace()
                         }
                     }
                 }
@@ -208,7 +204,7 @@ class MgmAgent(
     private fun sendGainMessage() {
         for (n: String in neighbors) {
             val toSend = MgmMessage(name, n, MessageType.GAIN, MessageContent(gain = gain))
-            neighborsPorts.get(n)?.let { sendMsg(it, toSend) }
+            neighborsPorts[n]?.let { sendMsg(it, toSend) }
         }
 
         // TODO: can publish the message to the channel of this agent
@@ -237,17 +233,17 @@ class MgmAgent(
         if (neighborsGains.size == neighbors.size) {
             val allGains: HashMap<String, Float> = neighborsGains
             allGains[name] = gain
-            if (optMode == "max") {
+            if (optMode == OptimizationMode.MAX) {
                 val maxNeighbour: String = java.util.Collections.max<Map.Entry<String, Float>>(
                     allGains.entries,
-                    java.util.Map.Entry.comparingByValue<String, Float>()
+                    java.util.Map.Entry.comparingByValue()
                 ).key
                 if (maxNeighbour == name) { // if the max gain is current agent
                     currentValue = newValue
                     currentUtility += gain
                     // sendValueMessage();
                 }
-            } else if (optMode == "min") {
+            } else if (optMode == OptimizationMode.MIN) {
                 val minNeighbour: String = java.util.Collections.min<Map.Entry<String, Float>>(
                     allGains.entries,
                     java.util.Map.Entry.comparingByValue()
@@ -289,8 +285,8 @@ class MgmAgent(
             var newUtility = evaluateExtensional(name, value)
             newUtility += evaluateRelations(value)
             println("agent: $name value:$value u:$newUtility")
-            if (newUtility > bestSoFar && (optMode == "max") ||
-                newUtility < bestSoFar && (optMode == "min")
+            if (newUtility > bestSoFar && (optMode == OptimizationMode.MAX) ||
+                newUtility < bestSoFar && (optMode == OptimizationMode.MIN)
             ) {
                 newValue = value
                 bestSoFar = newUtility
@@ -333,15 +329,15 @@ class MgmAgent(
              * TODO: return agentUtilityMap[val1][agent2][val2]
              */
             var value = 0f
-            if ((( agent1 == "a1" && agent2 == "a2" ||
+            if (((agent1 == "a1" && agent2 == "a2" ||
                         agent1 == "a2" && agent2 == "a1")
-                            && val1 == val2 )
+                        && val1 == val2)
             ) {
                 value += 10f
             }
-            if ((( agent1 == "a3" && agent2 == "a2" ||
+            if (((agent1 == "a3" && agent2 == "a2" ||
                         agent1 == "a2" && agent2 == "a3")
-                            && val1 == val2)
+                        && val1 == val2)
             ) {
                 value += 10f
             }
@@ -350,7 +346,7 @@ class MgmAgent(
 
         private fun evaluateExtensional(name: String, val1: String): Float {
             var value = 0f
-            when (name){
+            when (name) {
                 "a1" -> value += if (val1 == "R") -0.1f else 0.1f
                 "a2", "a3" -> value += if (val1 == "R") 0.1f else -0.1f
             }
