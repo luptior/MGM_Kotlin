@@ -3,6 +3,8 @@
 Simple DCOP(Distributed Constrained Optimization Problems) solver using MGM (Maxmimum Gain Message) algorithm written in Kotlin.
 Serialization is done with ProtoBuf. 
 
+To use it, clone it and runit with IntelliJ/Gradle
+
 1, Currently hard coded with a graph coloring problem.\
 2, Span multiple threads.
 
