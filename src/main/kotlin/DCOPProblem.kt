@@ -1,75 +1,46 @@
 /**
  * Class describing a sample DCOP problem.
  *
- *
  * agents, a list of agents names in String
  * domains, <K></K>,V> for agent ids and List of domain
  * edges, 2D matrix, if adjacent 1, otherwise 0
  * utility, [val1, val2, val3] = 10.1
  *
- *
  * TODO:
  * 1, Combinatorics
- * 2, Reads Sceanario Files
+ * 2, Reads Scenario Files
  */
 class DCOPProblem {
-    //    private static final Logger logger = LoggerFactory.getLogger(DCOPProblem.class);
-    var agents: List<String> = listOf("a1", "a2", "a3")
-    var domains: HashMap<String, List<String>> = HashMap()
-    var edges: Array<IntArray>
-    var utility: HashMap<List<*>, Double> = HashMap()
-
-    private fun solutionSpace(): List<List<String>>? {
-        // Return cartesian product of domains
-
-        // TODO: do the actual work here
-        // might need some library which can do the combinatorial in Java
-
-        var solutions: MutableList<List<String>>? = null
-
-        return solutions
-    }
+    val agents: List<String> = listOf("a1", "a2", "a3")
+    val domains: HashMap<String, List<String>> = HashMap()
+    val edges: Array<IntArray>
+    val utility: HashMap<List<*>, Double> = HashMap()
 
     /**
-     * Utility Part
+     * TODO: Return cartesian product of domains
+     *     private fun solutionSpace(): List<List<String>>? {
+     *            var solutions: MutableList<List<String>>? = null
+     *            return solutions
+     *     }
      */
-    override fun toString(): String {
-        var problemString = ""
-        problemString += "$agents \n$domains \n"
-        for (edge in edges) {
-            problemString += "$edge \n"
-        }
-        problemString += "$utility"
-        return problemString
-    }
 
-    companion object {
-        fun readSample(sampleFile: String?) {
-            // TODO: actually parse sample from a file
-        }
-    }
+    fun toPrettyString() = "$agents\n$domains\n${edges.joinToString(postfix = " \n")}$utility"
 
     init {
-        // default to have a sample question
-        val domain = mutableListOf<String>()
-        domain.add("R")
-        domain.add("G")
+        val domain = mutableListOf("R", "G")
         for (a in agents) {
             domains[a] = domain
         }
         edges = Array(agents.size) { IntArray(agents.size) }
         for (i in agents.indices) {
             for (j in agents.indices) {
-                if (i != j) {
-                    edges[i][j] = 1
-                } else {
-                    edges[i][j] = 0
-                }
+                edges[i][j] = if (i != j) 1 else 0
                 if (i == 0 && j == 2 || i == 2 && j == 0) {
                     edges[i][j] = 0
                 }
             }
         }
+
         /**
          * A simple sample rule of utility(min the best)
          * if v1 = v2, utility += 10 otherwise 0
@@ -86,8 +57,5 @@ class DCOPProblem {
         utility[listOf("G", "R", "R")] = 10.3
         utility[listOf("R", "G", "R")] = -0.1
         utility[listOf("G", "R", "G")] = 0.1
-
-//        logger.info("A dcop problem formed");
-//        logger.info(toString());
     }
 }
