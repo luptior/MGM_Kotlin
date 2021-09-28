@@ -5,7 +5,11 @@ import java.net.Socket
 import java.util.concurrent.TimeUnit
 import java.io.DataInputStream
 import java.io.DataOutputStream
-import kotlinx.serialization.json.*
+
+import kotlinx.serialization.protobuf.ProtoBuf
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
 
 /**
  * current default to be seeking maximum
@@ -42,12 +46,12 @@ class mgmAgent(
     // communication related fields
     private val ip: InetAddress? = null
     private val PORT: Int
-    public override fun run() {
+    override fun run() {
         // the main run process for each agent
         val ch = ClientHandler()
 
         // where agent spawn the thread to handle each income request
-        val ch_thread: Thread = Thread(ch)
+        val ch_thread = Thread(ch)
         ch_thread.start()
 
         // wait a second for the thread to start before messages are sent
@@ -71,14 +75,14 @@ class mgmAgent(
         private val socket: Socket
 
         @kotlin.jvm.Volatile
-        var recvd: String? = null
+        var recvd: ByteArray? = null
             private set
 
         override fun run() {
             while (true) {
                 try {
                     // receive 1
-                    recvd = dis.readUTF()
+                    recvd = dis.readBytes()
                     // System.out.println("    Msg received by " + name +"  "+ recvd);
                     socket.close()
                     break
@@ -105,6 +109,7 @@ class mgmAgent(
 
     // ClientHandler class
     internal inner class ClientHandler() : Runnable {
+        @OptIn(ExperimentalSerializationApi::class)
         override fun run() {
             val ss: ServerSocket
 //            var received: String
@@ -119,47 +124,49 @@ class mgmAgent(
                 // client request
                 while (cycleCount < cycle_limit) {
                     var socket: Socket? = null
-                    var pMsg: HashMap<String, String>?
                     try {
                         // socket object to receive incoming client requests\
                         socket = ss.accept()
 
 
                         // obtaining input and out streams
-                        val dis: java.io.DataInputStream = java.io.DataInputStream(socket.getInputStream())
-                        val dos: java.io.DataOutputStream = java.io.DataOutputStream(socket.getOutputStream())
+                        val dis = DataInputStream(socket.getInputStream())
+                        val dos = DataOutputStream(socket.getOutputStream())
 
                         // create a new thread object
-                        val ch: MessageHandler = MessageHandler(socket, dis, dos)
-                        val t: Thread = Thread(ch)
+                        val ch = MessageHandler(socket, dis, dos)
+                        val t = Thread(ch)
 
                         // Invoking the start() method
                         t.start()
                         t.join()
-                        pMsg = parseMsg(ch.recvd)
 
-                        // System.out.println(status + pMsg);
+                        ch.recvd?.let{ bytesMsg ->
+                            val decodedMsg = ProtoBuf.decodeFromByteArray<MgmMessage>(bytesMsg)
 
-                        when (pMsg["type"]) {
-                            "value" -> {
-                                neighborsNewValues[pMsg["origin"]!!] = pMsg["value"]!!
-                                if (cycleCount == 0) {
-                                    neighborsValues[pMsg["origin"]!!] = pMsg["value"]!!
-                                    var bestSoFar = evaluateExtensional(name, currentValue)
-                                    currentValue?.let { bestSoFar += evaluateRelations(it) }
-                                    currentUtility = bestSoFar
+                            when (decodedMsg.messageType) {
+                                MessageType.VALUE -> {
+                                    neighborsNewValues[decodedMsg.agentName] = decodedMsg.messageContent.value!!
+                                    if (cycleCount == 0 && currentValue != null) {
+                                        neighborsValues[decodedMsg.agentName] = decodedMsg.messageContent.value
+                                        var bestSoFar = evaluateExtensional(name, currentValue!!)
+                                        currentValue?.let { bestSoFar += evaluateRelations(it) }
+                                        currentUtility = bestSoFar
+                                    }
+                                    if (status == "value") {
+                                        handleValueMessage()
+                                    }
                                 }
-                                if (status == "value") {
-                                    handleValueMessage()
-                                }
-                            }
-                            "gain" -> {
-                                neighborsGains[pMsg["origin"]!!] = pMsg["value"]!!.toFloat()
-                                if (status == "gain") {
-                                    handleGainMesssage()
+                                MessageType.GAIN -> {
+                                    neighborsGains[decodedMsg.agentName] = decodedMsg.messageContent.gain!!
+                                    if (status == "gain") {
+                                        handleGainMesssage()
+                                    }
                                 }
                             }
                         }
+
+
                     } catch (e: java.lang.Exception) {
                         try {
                             socket?.close()
@@ -235,9 +242,7 @@ class mgmAgent(
         // given the new context received in this.neighborsNewValues
         // gain and newValue has been set by findOptAssignment()
 
-        // System.out.println("Agent: " + name + " " + neighborsGains);
         if (neighborsGains.size == neighbors.size) {
-//            val allGains: HashMap<String, Float> = neighborsGains.clone() as HashMap<String, Float>
             val allGains: HashMap<String, Float> = neighborsGains
             allGains[name] = gain
             if (optMode == "max") {
@@ -306,6 +311,7 @@ class mgmAgent(
         println("Agent $name current ultility: $currentUtility gain: $gain neighbors $neighborsValues")
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     private fun sendMsg(port: Int, msg: MgmMessage) {
         try {
             // getting localhost ip
@@ -319,8 +325,9 @@ class mgmAgent(
             val dos = DataOutputStream(s.getOutputStream())
 
             //send 1, the msg gonna be read
-            dos.writeUTF(Json.encodeToString(msg) )
-
+//            dos.writeUTF(Json.encodeToString(msg) )
+            val bytes = ProtoBuf.encodeToByteArray(msg)
+            dos.write(bytes)
             //System.out.println("Msg \"" + msg +"\" sent from " + PORT + " to " + port);
             s.close()
             dis.close()
@@ -380,10 +387,10 @@ class mgmAgent(
         // can be max or min
 
         //Assign the first element of the dcop domain to be the current assignment
-        var dcopDomain = domain
+        val dcopDomain = domain
         currentValue = dcopDomain[0]
         currentUtility = 0f
-        this.neighbors = neighbors as List<String>
+        this.neighbors = neighbors
         neighborsValues = HashMap()
         neighborsNewValues = HashMap()
         neighborsGains = HashMap()

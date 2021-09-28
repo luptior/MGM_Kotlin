@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.5.30"
-    kotlin("plugin.serialization") version "1.5.30"
+    kotlin("plugin.serialization") version "1.5.31"
     application
 }
 
@@ -15,7 +15,7 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.3.0")
 }
 
 tasks.test {
