@@ -1,4 +1,8 @@
-@ExperimentalCoroutinesApi
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import okio.ByteString
+
 class WebSocketListener : WebSocketListener() {
 
     val socketEventChannel: Channel<SocketUpdate> = Channel(10)
