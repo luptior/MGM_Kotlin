@@ -10,6 +10,7 @@ import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.decodeFromByteArray
+import kotlin.concurrent.thread
 
 /**
  * current default to be seeking maximum
@@ -60,11 +61,7 @@ class MgmAgent(
     private val PORT: Int
     override fun run() {
         // the main run process for each agent
-        val ch = ClientHandler()
-
-        // where agent spawn the thread to handle each income request
-        val chThread = Thread(ch)
-        chThread.start()
+        thread { ClientHandler().run() }
 
         // wait a second for the thread to start before messages are sent
         try {
