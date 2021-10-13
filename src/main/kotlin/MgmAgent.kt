@@ -16,15 +16,8 @@ import kotlin.concurrent.thread
  * current default to be seeking maximum
  */
 
-enum class AgentStatus {
-    GAIN,
-    VALUE
-}
-
-enum class OptimizationMode {
-    MAX,
-    MIN
-}
+enum class AgentStatus { GAIN, VALUE }
+enum class OptimizationMode { MAX, MIN }
 
 class MgmAgent(
     private val name: String,
