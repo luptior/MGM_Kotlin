@@ -33,9 +33,6 @@ fun main() {
     }
 
     // start agents
-    for (a in p.agents) {
-        thread {
-            agentDict[a]?.run()
-        }
-    }
+    agentDict.values.forEach{  thread { it.run() } }
+
 }
