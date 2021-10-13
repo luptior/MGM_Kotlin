@@ -1,6 +1,7 @@
 import kotlinx.coroutines.*
 
-fun main() {
+suspend fun main() = coroutineScope {
+
     val p = DCOPProblem()
 
     val agentsPorts = HashMap<String, Int>()
@@ -35,7 +36,8 @@ fun main() {
     // start agents
 
     for (a in p.agents) {
-        val t = Thread(agentDict[a])
-        t.start()
+        launch(Dispatchers.Default) {
+            agentDict[a]?.run()
+        }
     }
 }
