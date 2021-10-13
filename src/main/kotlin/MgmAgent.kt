@@ -10,6 +10,8 @@ import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.decodeFromByteArray
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 /**
  * current default to be seeking maximum
@@ -61,6 +63,21 @@ class MgmAgent(
     override fun run() {
         // the main run process for each agent
         val ch = ClientHandler()
+
+
+        //websockets
+        val client = OkHttpClient()
+
+        val getRequest = Request.Builder()
+            .url("https://mytodoserver.com/todolist")
+            .build()
+
+        try {
+            val response = client.newCall(getRequest).execute();
+            println(response.body?.string());
+        } catch (e: IOException ) {
+            e.printStackTrace();
+        }
 
         // where agent spawn the thread to handle each income request
         val chThread = Thread(ch)
