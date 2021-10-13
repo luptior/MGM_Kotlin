@@ -21,7 +21,7 @@ fun main() {
             a,
             p.agents.indexOf(a),
             p.domains[a]!!,
-            "max",
+            OptimizationMode.MAX,
             10,
             neighbors,
             5000 + p.agents.indexOf(a),
