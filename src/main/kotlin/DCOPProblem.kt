@@ -11,10 +11,10 @@
  * 2, Reads Scenario Files
  */
 class DCOPProblem {
-    val agents: List<String> = listOf("a1", "a2", "a3")
-    val domains: HashMap<String, List<String>> = HashMap()
-    val edges: Array<IntArray>
-    val utility: HashMap<List<*>, Double> = HashMap()
+    val agentNames: List<String> = listOf("a1", "a2", "a3")
+    val agentDomains: HashMap<String, List<String>> = HashMap()
+    val edgesBetweenAgents: Array<IntArray>
+    private val combinationUtility: HashMap<List<String>, Double> = HashMap()
 
     /**
      * TODO: Return cartesian product of domains
@@ -24,19 +24,20 @@ class DCOPProblem {
      *     }
      */
 
-    fun toPrettyString() = "$agents\n$domains\n${edges.joinToString(postfix = " \n")}$utility"
+    fun toPrettyString() =
+        "$agentNames\n$agentDomains\n${edgesBetweenAgents.joinToString(postfix = " \n")}$combinationUtility"
 
     init {
         val domain = mutableListOf("R", "G")
-        for (a in agents) {
-            domains[a] = domain
+        for (agentName in agentNames) {
+            agentDomains[agentName] = domain
         }
-        edges = Array(agents.size) { IntArray(agents.size) }
-        for (i in agents.indices) {
-            for (j in agents.indices) {
-                edges[i][j] = if (i != j) 1 else 0
+        edgesBetweenAgents = Array(agentNames.size) { IntArray(agentNames.size) }
+        for (i in agentNames.indices) {
+            for (j in agentNames.indices) {
+                edgesBetweenAgents[i][j] = if (i != j) 1 else 0
                 if (i == 0 && j == 2 || i == 2 && j == 0) {
-                    edges[i][j] = 0
+                    edgesBetweenAgents[i][j] = 0
                 }
             }
         }
@@ -49,13 +50,13 @@ class DCOPProblem {
          * if v2 = R, utility += 0.1 otherwise -= 0.1
          * if v3 = R, utility += 0.1 otherwise -= 0.1
          */
-        utility[listOf("R", "R", "R")] = 20.1
-        utility[listOf("R", "R", "G")] = 9.9
-        utility[listOf("R", "G", "G")] = 9.7
-        utility[listOf("G", "G", "G")] = 19.9
-        utility[listOf("G", "G", "R")] = 10.1
-        utility[listOf("G", "R", "R")] = 10.3
-        utility[listOf("R", "G", "R")] = -0.1
-        utility[listOf("G", "R", "G")] = 0.1
+        combinationUtility[listOf("R", "R", "R")] = 20.1
+        combinationUtility[listOf("R", "R", "G")] = 9.9
+        combinationUtility[listOf("R", "G", "G")] = 9.7
+        combinationUtility[listOf("G", "G", "G")] = 19.9
+        combinationUtility[listOf("G", "G", "R")] = 10.1
+        combinationUtility[listOf("G", "R", "R")] = 10.3
+        combinationUtility[listOf("R", "G", "R")] = -0.1
+        combinationUtility[listOf("G", "R", "G")] = 0.1
     }
 }

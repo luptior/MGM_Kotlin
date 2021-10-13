@@ -26,13 +26,13 @@ enum class OptimizationMode {
 }
 
 class MgmAgent(
-    private val name: String,
+    private val agentName: String,
     val uuid: Int,
-    private val domain: List<String>,
+    private val agentDomain: List<String>,
     private val optMode: OptimizationMode = OptimizationMode.MAX,
-    val cycle_limit: Int = 10,
-    neighbors: List<String>,
-    port: Int,
+    val cycleLimit: Int = 10,
+    agentNeighbors: List<String>,
+    agentPort: Int,
     neighborsPorts: HashMap<String, Int>
 ) : Runnable {
     var currentValue: String?
@@ -118,14 +118,14 @@ class MgmAgent(
         override fun run() {
             val ss: ServerSocket
             recv = mutableListOf()
-            println("Agent $name starts running")
+            println("Agent $agentName starts running")
             try {
                 // server is listening on port 5056
                 ss = ServerSocket(PORT)
-                println("Agent $name gets port $PORT")
+                println("Agent $agentName gets port $PORT")
 
                 // running infinite loop for getting client request
-                while (cycleCount < cycle_limit) {
+                while (cycleCount < cycleLimit) {
                     var socket: Socket? = null
                     try {
                         // socket object to receive incoming client requests\
@@ -151,7 +151,7 @@ class MgmAgent(
                                     neighborsNewValues[decodedMsg.agentName] = decodedMsg.messageContent.value!!
                                     if (cycleCount == 0 && currentValue != null) {
                                         neighborsValues[decodedMsg.agentName] = decodedMsg.messageContent.value
-                                        var bestSoFar = evaluateExtensional(name, currentValue!!)
+                                        var bestSoFar = evaluateExtensional(agentName, currentValue!!)
                                         currentValue?.let { bestSoFar += evaluateRelations(it) }
                                         currentUtility = bestSoFar
                                     }
@@ -178,7 +178,7 @@ class MgmAgent(
                         }
                     }
                 }
-                println("AGENT: $name value: $currentValue utility: $currentUtility")
+                println("AGENT: $agentName value: $currentValue utility: $currentUtility")
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -190,7 +190,7 @@ class MgmAgent(
      */
     private fun sendValueMessage() {
         for (n: String in neighbors) {
-            val toSend = MgmMessage(name, n, MessageType.VALUE, MessageContent(value = currentValue))
+            val toSend = MgmMessage(agentName, n, MessageType.VALUE, MessageContent(value = currentValue))
             neighborsPorts[n]?.let { sendMsg(it, toSend) }
         }
 
@@ -203,7 +203,7 @@ class MgmAgent(
      */
     private fun sendGainMessage() {
         for (n: String in neighbors) {
-            val toSend = MgmMessage(name, n, MessageType.GAIN, MessageContent(gain = gain))
+            val toSend = MgmMessage(agentName, n, MessageType.GAIN, MessageContent(gain = gain))
             neighborsPorts[n]?.let { sendMsg(it, toSend) }
         }
 
@@ -232,13 +232,13 @@ class MgmAgent(
     fun handleGainMessage() {
         if (neighborsGains.size == neighbors.size) {
             val allGains: HashMap<String, Float> = neighborsGains
-            allGains[name] = gain
+            allGains[agentName] = gain
             if (optMode == OptimizationMode.MAX) {
                 val maxNeighbour: String = java.util.Collections.max<Map.Entry<String, Float>>(
                     allGains.entries,
                     java.util.Map.Entry.comparingByValue()
                 ).key
-                if (maxNeighbour == name) { // if the max gain is current agent
+                if (maxNeighbour == agentName) { // if the max gain is current agent
                     currentValue = newValue
                     currentUtility += gain
                     // sendValueMessage();
@@ -248,7 +248,7 @@ class MgmAgent(
                     allGains.entries,
                     java.util.Map.Entry.comparingByValue()
                 ).key
-                if (minNeighbour == name) {
+                if (minNeighbour == agentName) {
                     currentValue = newValue
                     currentUtility += gain
                 }
@@ -256,7 +256,7 @@ class MgmAgent(
                 println("Optimization Mode is not supported")
             }
             println(
-                "In cycle: $cycleCount agent: $name neighbors: $neighborsValues " + "current utility: " +
+                "In cycle: $cycleCount agent: $agentName neighbors: $neighborsValues " + "current utility: " +
                         "${currentUtility - gain} gain: $gain"
             )
             neighborsGains = HashMap()
@@ -270,7 +270,7 @@ class MgmAgent(
     private fun evaluateRelations(value: String): Float {
         var tempValue = 0f
         for (n: String in neighbors) {
-            (neighborsValues[n]?.let { tempValue += evaluateValue(name, value, n, it) })
+            (neighborsValues[n]?.let { tempValue += evaluateValue(agentName, value, n, it) })
         }
         return tempValue
     }
@@ -281,10 +281,10 @@ class MgmAgent(
          * returns the best assignment and store in this.gain
          */
         var bestSoFar = currentUtility
-        for (value: String in domain) {
-            var newUtility = evaluateExtensional(name, value)
+        for (value: String in agentDomain) {
+            var newUtility = evaluateExtensional(agentName, value)
             newUtility += evaluateRelations(value)
-            println("agent: $name value:$value u:$newUtility")
+            println("agent: $agentName value:$value u:$newUtility")
             if (newUtility > bestSoFar && (optMode == OptimizationMode.MAX) ||
                 newUtility < bestSoFar && (optMode == OptimizationMode.MIN)
             ) {
@@ -295,7 +295,7 @@ class MgmAgent(
             }
         }
         gain = bestSoFar - currentUtility
-        println("Agent $name current utility: $currentUtility gain: $gain neighbors $neighborsValues")
+        println("Agent $agentName current utility: $currentUtility gain: $gain neighbors $neighborsValues")
     }
 
     @OptIn(ExperimentalSerializationApi::class)
@@ -355,14 +355,14 @@ class MgmAgent(
     }
 
     init {
-        val dcopDomain = domain
+        val dcopDomain = agentDomain
         currentValue = dcopDomain[0] //Assign the first element of the dcop domain to be the current assignment
         currentUtility = 0f
-        this.neighbors = neighbors
+        this.neighbors = agentNeighbors
         neighborsValues = HashMap()
         neighborsNewValues = HashMap()
         neighborsGains = HashMap()
-        PORT = port
+        PORT = agentPort
         this.neighborsPorts = neighborsPorts
     }
 }
