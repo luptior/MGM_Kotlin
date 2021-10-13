@@ -27,7 +27,7 @@ enum class OptimizationMode {
 
 class MgmAgent(
     private val name: String,
-    val iD: Int,
+    val uuid: Int,
     private val domain: List<String>,
     private val optMode: OptimizationMode = OptimizationMode.MAX,
     val cycle_limit: Int = 10,
