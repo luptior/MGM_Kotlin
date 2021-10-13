@@ -4,32 +4,31 @@ fun main() {
     val p = DCOPProblem()
 
     val agentsPorts = HashMap<String, Int>()
-    for (a in p.agents) {
-        agentsPorts[a] = 5000 + p.agents.indexOf(a)
+    p.agents.forEachIndexed { index, agentName ->
+        agentsPorts[agentName] = 5000 + index
     }
 
     // build agents
     val agentDict = HashMap<String, MgmAgent>()
 
-    for (a in p.agents) {
+    p.agents.forEachIndexed { index, agentName ->
         val neighbors = mutableListOf<String>()
-        val index = p.agents.indexOf(a)
         for (i in 0 until p.edges.size) {
             if (p.edges[index][i] == 1) {
                 neighbors.add(p.agents[i])
             }
         }
         val newAgent = MgmAgent(
-            a,
-            p.agents.indexOf(a),
-            p.domains[a]!!,
+            agentName,
+            p.agents.indexOf(agentName),
+            p.domains[agentName]!!,
             OptimizationMode.MAX,
             10,
             neighbors,
-            5000 + p.agents.indexOf(a),
+            5000 + p.agents.indexOf(agentName),
             agentsPorts
         )
-        agentDict[a] = newAgent
+        agentDict[agentName] = newAgent
     }
 
     // start agents
