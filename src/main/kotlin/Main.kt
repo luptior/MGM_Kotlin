@@ -36,8 +36,11 @@ suspend fun main() = coroutineScope {
     // start agents
 
     for (agentName in dcopProblem.agentNames) {
-        launch(Dispatchers.Default) {
+        val job = launch(Dispatchers.Default) {
             agentNameMap[agentName]?.run()
         }
+        job.join()
     }
+
+    println("Finished!")
 }
