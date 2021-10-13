@@ -1,3 +1,5 @@
+import kotlin.concurrent.thread
+
 fun main() {
     val p = DCOPProblem()
 
@@ -32,7 +34,8 @@ fun main() {
 
     // start agents
     for (a in p.agents) {
-        val t = Thread(agentDict[a])
-        t.start()
+        thread {
+            agentDict[a]?.run()
+        }
     }
 }
