@@ -1,3 +1,5 @@
+import kotlinx.coroutines.*
+
 fun main() {
     val p = DCOPProblem()
 
@@ -21,7 +23,7 @@ fun main() {
             a,
             p.agents.indexOf(a),
             p.domains[a]!!,
-            "max",
+            OptimizationMode.MAX,
             10,
             neighbors,
             5000 + p.agents.indexOf(a),
@@ -31,6 +33,7 @@ fun main() {
     }
 
     // start agents
+
     for (a in p.agents) {
         val t = Thread(agentDict[a])
         t.start()
