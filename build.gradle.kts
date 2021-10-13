@@ -6,28 +6,6 @@ plugins {
     application
 }
 
-kotlin {
-    // Determine host preset.
-    val hostOs = System.getProperty("os.name")
-
-    // Create target for the host platform.
-    val hostTarget = when {
-        hostOs == "Mac OS X" -> macosX64("workers")
-        hostOs == "Mac OS X" -> macosArm64("workers")
-        hostOs == "Linux" -> linuxX64("workers")
-        hostOs.startsWith("Windows") -> mingwX64("workers")
-        else -> throw GradleException("Host OS '$hostOs' is not supported in Kotlin/Native $project.")
-    }
-
-    hostTarget.apply {
-        binaries {
-            executable {
-                entryPoint = "sample.workers.main"
-            }
-        }
-    }
-}
-
 group = "me.gx"
 version = "1.0-SNAPSHOT"
 
@@ -45,7 +23,7 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile>() {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "11"
 }
 
 application {
