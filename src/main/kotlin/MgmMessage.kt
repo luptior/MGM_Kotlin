@@ -1,5 +1,6 @@
-import kotlinx.serialization.*
-import kotlinx.serialization.protobuf.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 
 @Serializable
 enum class MessageType {
